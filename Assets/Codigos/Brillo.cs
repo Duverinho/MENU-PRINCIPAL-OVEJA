@@ -5,29 +5,33 @@ using UnityEngine.UI;
 
 public class Brillo : MonoBehaviour
 {
-    public Slider Slider;
-    public float sliderValue;
-    public Image panelBrillo;
+    public Slider Slider; // El slider que controla el brillo
+    public Image panelBrillo; // El panel cuya transparencia se ajusta
+    private float sliderValue; // Guardar el valor actual del slider
+
     // Start is called before the first frame update
     void Start()
     {
-        Slider.value = PlayerPrefs.GetFloat("brillo", 0.5f);
+        // Obtener el valor guardado en PlayerPrefs o usar el valor predeterminado de 0.5
+        sliderValue = PlayerPrefs.GetFloat("brillo", 0.5f);
 
-        panelBrillo.color = new Color(panelBrillo.color.r, panelBrillo.color.g, panelBrillo.color.b, Slider.value);
+        // Establecer el valor del slider en el valor guardado
+        Slider.value = sliderValue;
 
-        Slider.onValueChanged.AddListener(ChangeSlider);
+        // Aplicar el valor del slider al panel (ajustando la opacidad)
+        panelBrillo.color = new Color(panelBrillo.color.r, panelBrillo.color.g, panelBrillo.color.b, sliderValue);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
+    // Este método es llamado cuando el slider cambia su valor
     public void ChangeSlider(float valor)
     {
-        Slider.value = valor;
-        PlayerPrefs.SetFloat("brillo", valor);
-        panelBrillo.color = new Color(panelBrillo.color.r, panelBrillo.color.g, panelBrillo.color.b, Slider.value);
+        // Actualizar el valor del slider
+        sliderValue = valor;
+
+        // Guardar el nuevo valor de brillo en PlayerPrefs
+        PlayerPrefs.SetFloat("brillo", sliderValue);
+
+        // Aplicar el valor al panel (ajustando la opacidad)
+        panelBrillo.color = new Color(panelBrillo.color.r, panelBrillo.color.g, panelBrillo.color.b, sliderValue);
     }
 }
