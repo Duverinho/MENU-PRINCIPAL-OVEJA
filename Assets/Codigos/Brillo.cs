@@ -8,7 +8,7 @@ public class Brillo : MonoBehaviour
     public Slider Slider; // El slider que controla el brillo
     public Image panelBrillo; // El panel cuya transparencia se ajusta
     private float sliderValue; // Guardar el valor actual del slider
-    private float valorPredeterminado = 0.5f; // Valor predeterminado de brillo
+    private float valorPredeterminado = 0.49f; // Valor predeterminado de brillo
 
     // Start is called before the first frame update
     void Start()
