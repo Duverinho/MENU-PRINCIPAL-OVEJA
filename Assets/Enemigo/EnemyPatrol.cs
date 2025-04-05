@@ -1,44 +1,43 @@
 using UnityEngine;
-using System.Collections; // Para usar corrutinas
+using UnityEngine.AI;
+using System.Collections;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(NavMeshAgent))]
 public class EnemyPatrol : MonoBehaviour
 {
     [Header("Patrullaje")]
     public Transform[] patrolPoints;
-    public float moveSpeed = 3f;
     private int currentPointIndex = 0;
 
     [Header("Detección")]
     public float detectionRadius = 5f;
     public string playerTag = "Player";
-    public float lostPlayerDelay = 3f; // Espera antes de volver a patrullar
+    public float lostPlayerDelay = 3f;
 
     [Header("Empuje")]
-    public float pushForce = 15f; // Mayor fuerza de empuje
+    public float pushForce = 15f;
     public float pushCooldown = 2f;
     private float lastPushTime = -999f;
 
-    private Rigidbody rb;
+    private NavMeshAgent agent;
     private GameObject player;
     private bool isChasing = false;
-    private Coroutine lostPlayerCoroutine; // Para manejar el retorno a patrulla
+    private Coroutine lostPlayerCoroutine;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true;
+        agent = GetComponent<NavMeshAgent>();
         player = GameObject.FindGameObjectWithTag(playerTag);
     }
 
-    void FixedUpdate()
+    void Update()
     {
         if (player != null && Vector3.Distance(transform.position, player.transform.position) <= detectionRadius)
         {
             if (!isChasing)
             {
                 isChasing = true;
-                if (lostPlayerCoroutine != null) StopCoroutine(lostPlayerCoroutine); // Cancela el retorno si vuelve a ver al jugador
+                if (lostPlayerCoroutine != null) StopCoroutine(lostPlayerCoroutine);
             }
         }
         else if (isChasing && lostPlayerCoroutine == null)
@@ -61,30 +60,28 @@ public class EnemyPatrol : MonoBehaviour
         if (patrolPoints.Length < 2) return;
 
         Transform targetPoint = patrolPoints[currentPointIndex];
-        Vector3 currentPosition = transform.position;
-        Vector3 targetPosition = new Vector3(targetPoint.position.x, currentPosition.y, targetPoint.position.z);
-
-        Vector3 newPosition = Vector3.MoveTowards(currentPosition, targetPosition, moveSpeed * Time.fixedDeltaTime);
-        rb.MovePosition(newPosition);
-
-        if (Vector3.Distance(currentPosition, targetPosition) < 0.1f)
+        if (!agent.pathPending && agent.remainingDistance < 0.5f)
         {
             currentPointIndex = (currentPointIndex + 1) % patrolPoints.Length;
+            agent.SetDestination(patrolPoints[currentPointIndex].position);
+        }
+        else if (!agent.hasPath)
+        {
+            agent.SetDestination(targetPoint.position);
         }
     }
 
     void ChasePlayer()
     {
-        Vector3 currentPosition = transform.position;
-        Vector3 targetPosition = new Vector3(player.transform.position.x, currentPosition.y, player.transform.position.z);
-
-        Vector3 newPosition = Vector3.MoveTowards(currentPosition, targetPosition, moveSpeed * Time.fixedDeltaTime);
-        rb.MovePosition(newPosition);
-
-        float distanceToPlayer = Vector3.Distance(currentPosition, player.transform.position);
-        if (distanceToPlayer < 1.5f && Time.time >= lastPushTime + pushCooldown)
+        if (player != null)
         {
-            PushPlayer();
+            agent.SetDestination(player.transform.position);
+
+            float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
+            if (distanceToPlayer < 1.5f && Time.time >= lastPushTime + pushCooldown)
+            {
+                PushPlayer();
+            }
         }
     }
 
@@ -94,8 +91,7 @@ public class EnemyPatrol : MonoBehaviour
         if (playerRb != null)
         {
             Vector3 pushDir = (player.transform.position - transform.position).normalized;
-            pushDir.y = 0.5f; // Añadimos impulso vertical
-
+            pushDir.y = 0.5f;
             playerRb.AddForce(pushDir * pushForce, ForceMode.Impulse);
             lastPushTime = Time.time;
         }
@@ -105,7 +101,8 @@ public class EnemyPatrol : MonoBehaviour
     {
         yield return new WaitForSeconds(lostPlayerDelay);
         isChasing = false;
-        lostPlayerCoroutine = null; // Reiniciar la variable
+        lostPlayerCoroutine = null;
+        agent.SetDestination(patrolPoints[currentPointIndex].position);
     }
 
     void OnDrawGizmosSelected()
